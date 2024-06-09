@@ -1,7 +1,8 @@
 {
   "name": "appwrite-wrapper",
-  "version": "1.0.1",
-  "main": "index.js",
+  "version": "1.0.2",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup",
     "test": "echo \"Error: no test specified\" && exit 1"

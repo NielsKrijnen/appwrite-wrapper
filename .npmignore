@@ -4,3 +4,4 @@
 /coverage.data
 /coverage/
 tsup.config.ts
+src
