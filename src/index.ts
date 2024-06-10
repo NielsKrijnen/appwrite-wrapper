@@ -39,21 +39,30 @@ export function createWebClient
     get databases() {
       const databases = new Databases(client);
       return {
-        get<DB extends keyof Database, COLL extends keyof Database[DB], S extends SelectQuery<DB, COLL> | undefined>(db: DB, coll: COLL, id: string, select?: S, queries?: string[]) {
+        async get<DB extends keyof Database, COLL extends keyof Database[DB], S extends SelectQuery<DB, COLL> | undefined>(db: DB, coll: COLL, id: string, select?: S, queries?: string[]) {
           if (select) {
             if (queries) queries.push(Query.select(select as string[]))
             else queries = [Query.select(select as string[])]
           }
           type Document = (S extends SelectQuery<DB, COLL> ? Pick<Database[DB][COLL], S[number]> : Database[DB][COLL]) & Models.Document
-          return databases.getDocument<Document>(config.database[db].id, config.database[db].colls[coll], id, queries);
+          const document = await databases.getDocument<Document>(config.database[db].id, config.database[db].colls[coll], id, queries);
+          return rebuildDocument(document);
         },
-        list<DB extends keyof Database, COLL extends keyof Database[DB], S extends SelectQuery<DB, COLL> | undefined>(db: DB, coll: COLL, select?: S, queries?: string[]) {
+        async list<DB extends keyof Database, COLL extends keyof Database[DB], S extends SelectQuery<DB, COLL> | undefined>(db: DB, coll: COLL, select?: S, queries?: string[]) {
           if (select) {
             if (queries) queries.push(Query.select(select as string[]))
             else queries = [Query.select(select as string[])]
           }
           type Document = (S extends SelectQuery<DB, COLL> ? Pick<Database[DB][COLL], S[number]> : Database[DB][COLL]) & Models.Document
-          return databases.listDocuments<Document>(config.database[db].id, config.database[db].colls[coll], queries);
+          const documents = await databases.listDocuments<Document>(config.database[db].id, config.database[db].colls[coll], queries);
+          const newDocuments: Document[] = [];
+          for (const document of documents.documents) {
+            newDocuments.push(rebuildDocument(document));
+          }
+          return {
+            documents: newDocuments,
+            total: documents.total
+          } as Models.DocumentList<Document>;
         },
         create<DB extends keyof Database, COLL extends keyof Database[DB], Doc extends Models.Document = Database[DB][COLL] & Models.Document>(db: DB, coll: COLL, id: string = ID.unique(), data: Omit<Doc, keyof Models.Document>, permissions?: string[]) {
           return databases.createDocument<Doc>(config.database[db].id, config.database[db].colls[coll], id, data, permissions);
@@ -128,4 +137,20 @@ export function createWebClient
       return new Teams(client);
     }
   } as const;
+}
+
+function rebuildDocument<T extends { [k: string]: any }>(document: T): T {
+  let newDocument: any = {};
+  for (const property of Object.getOwnPropertyNames(document)) {
+    try {
+      newDocument[property] = new Date(document[property])
+    } catch {
+      try {
+        newDocument[property] = new URL(document[property]);
+      } catch {
+        newDocument[property] = document[property];
+      }
+    }
+  }
+  return newDocument as T;
 }
