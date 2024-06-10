@@ -45,7 +45,7 @@ export function createWebClient
             else queries = [Query.select(select as string[])]
           }
           type Document = (S extends SelectQuery<DB, COLL> ? Pick<Database[DB][COLL], S[number]> : Database[DB][COLL]) & Models.Document
-          const document = await databases.getDocument<Document>(config.database[db].id, config.database[db].colls[coll], id, queries);
+          const document = await databases.getDocument<Document>(config.database[db].id ?? db, config.database[db].colls[coll] ?? coll, id, queries);
           return rebuildDocument(document);
         },
         async list<DB extends keyof Database, COLL extends keyof Database[DB], S extends SelectQuery<DB, COLL> | undefined>(db: DB, coll: COLL, select?: S, queries?: string[]) {
@@ -54,7 +54,7 @@ export function createWebClient
             else queries = [Query.select(select as string[])]
           }
           type Document = (S extends SelectQuery<DB, COLL> ? Pick<Database[DB][COLL], S[number]> : Database[DB][COLL]) & Models.Document
-          const documents = await databases.listDocuments<Document>(config.database[db].id, config.database[db].colls[coll], queries);
+          const documents = await databases.listDocuments<Document>(config.database[db].id ?? db, config.database[db].colls[coll] ?? coll, queries);
           const newDocuments: Document[] = [];
           for (const document of documents.documents) {
             newDocuments.push(rebuildDocument(document));
@@ -65,13 +65,13 @@ export function createWebClient
           } as Models.DocumentList<Document>;
         },
         create<DB extends keyof Database, COLL extends keyof Database[DB], Doc extends Models.Document = Database[DB][COLL] & Models.Document>(db: DB, coll: COLL, id: string = ID.unique(), data: Omit<Doc, keyof Models.Document>, permissions?: string[]) {
-          return databases.createDocument<Doc>(config.database[db].id, config.database[db].colls[coll], id, data, permissions);
+          return databases.createDocument<Doc>(config.database[db].id ?? db, config.database[db].colls[coll] ?? coll, id, data, permissions);
         },
         update<DB extends keyof Database, COLL extends keyof Database[DB], Doc extends Models.Document = Database[DB][COLL] & Models.Document>(db: DB, coll: COLL, id: string, data: Partial<Omit<Doc, keyof Models.Document>>, permissions?: string[]) {
-          return databases.updateDocument<Doc>(config.database[db].id, config.database[db].colls[coll], id, data, permissions);
+          return databases.updateDocument<Doc>(config.database[db].id ?? db, config.database[db].colls[coll] ?? coll, id, data, permissions);
         },
         delete<DB extends keyof Database>(db: DB, coll: keyof Database[DB], id: string) {
-          return databases.deleteDocument(config.database[db].id, config.database[db].colls[coll], id);
+          return databases.deleteDocument(config.database[db].id ?? db, config.database[db].colls[coll] ?? coll, id);
         }
       } as const;
     },
